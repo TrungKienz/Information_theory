@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Probability App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Probability App</h1>
+  <label for="rows">Number of rows (M):</label>
+  <input type="number" id="rows" />
+  <br />
+  <label for="columns">Number of columns (N):</label>
+  <input type="number" id="columns" />
+  <br />
+  <button onclick="createMatrix()">Create Matrix</button>
+  <br /><br />
+  <div id="matrixContainer"></div>
+  <button onclick="calculateResults()">Calculate</button>
+  <br /><br />
+  <div id="results"></div>
+
+  <script>
+    let matrix = [];
+
+    function isNegative(number) {
+      return number < 0;
+    }
+
+    // Tạo ma trận 
+    function createMatrix() {
+      const rowsInput = document.getElementById('rows'); // Tạo số dòng của ma trận thông qua việc nhập dữ liệu 
+      const columnsInput = document.getElementById('columns'); // Tạo số cột của ma trận thông qua việc nhập dữ liệu 
+      const rows = parseInt(rowsInput.value); 
+      const columns = parseInt(columnsInput.value);
+      const matrixContainer = document.getElementById('matrixContainer');
+
+      matrixContainer.innerHTML = '';
+      // Tạo các ô dữ liệu để nhập dữ liệu của ma trận
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = '0';
+          input.step = '0.01';
+
+          const label = document.createElement('label');
+          label.textContent = `P(${i + 1},${j + 1}): `;
+          label.appendChild(input);
+
+          matrixContainer.appendChild(label);
+          matrixContainer.appendChild(document.createElement('br'));
+        }
+      }
+    }
+    // Lấy dữ liệu của từng ô trong ma trận
+    function getMatrixValues() {
+      const matrixValues = [];
+      const inputs = document.querySelectorAll('#matrixContainer input');
+      // Đẩy giá trị của từng ô trong ma trận vào mảng 
+      for (let i = 0; i < inputs.length; i++) {
+        matrixValues.push(parseFloat(inputs[i].value));
+      }
+
+      return matrixValues;
+    }
+    // Xác định giá trị trong từng ô trong ma trận là giá trị dương hay âm (Nếu giá trị nhận vào là âm thì trả về false giá trị nhận vào là dương thì trả về true)
+    function validateMatrixValues() {
+      const matrixValues = getMatrixValues();
+      // Duyệt từng giá trị trong mảng ma trận đã lưu trong matrixValue và được khởi tạo bằng hàm getMatrixValue
+      for (let i = 0; i < matrixValues.length; i++) {
+        if (isNegative(matrixValues[i])) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+    // Tính toán entropy với giá trị truyền vào là một mảng probailiies
+    function calculateEntropy(probabilities) {
+      let entropy = 0; // Khởi tạo entropy ban đầu là 0
+      // Duyệt từng phần tử trong mảng probabilities 
+      for (let probability of probabilities) {
+        entropy += probability * Math.log2(probability); // Tính toán entropy theo công thức entropy = entropy + (probability * log2(probability))
+      }
+      return -entropy; // Trả về kết quả là -entropy
+    }
+    // Tính toán Joint Entropy với giá trị truyền vào là ma trận với số hàng rows và số cột là columns
+    function calculateJointEntropy(matrix, rows, columns) {
+      let jointEntropy = 0;
+      // Duyệt từng phần tử trong ma trận và tính toán joint entropy
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+          const probability = matrix[i * columns + j];  // Duyệt giá trị từ trái qua phải và từ trên xuống dưới
+          jointEntropy += probability * Math.log2(probability); // công thức tính joint entropy 
+        }
+      }
+
+      return -jointEntropy;
+    }
+    // Hàm tính toán conditional entropy với các tham số là ma trận với số hàng là rows và số cột là columns và mảng các probabilities
+    function calculateConditionalEntropy(matrix, rows, columns, probabilities) {
+      let conditionalEntropy = 0;
+      // Duyệt từng gía trị trong ma trận row x columns
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+          const probability = matrix[i * columns + j]; // Duyệt giá trị từ trái qua phải từ trên xuống dưới gán vào giá trị probability
+          const marginalProbability = probabilities[j]; // Gán giá trị của phần tử thứ j trong mảng probabilities vào biến marginalProbability
+          conditionalEntropy += probability * Math.log2(probability / marginalProbability);// Công thức tính toán giá trị cofditional entropy
+        }
+      }
+
+      return -conditionalEntropy;
+    }
+    // Hàm tính toán giá trị KLDivergence với giá trị truyền vào là mảng sourceProbs và targetProbs
+    function calculateKLDivergence(sourceProbs, targetProbs) {
+      let divergence = 0;
+      // Duyệt từng phần tử trong mảng sourceProbs sau đó áp dụng công thức tính divergence
+      for (let i = 0; i < sourceProbs.length; i++) {
+        divergence += sourceProbs[i] * Math.log2(sourceProbs[i] / targetProbs[i]);
+      }
+
+      return divergence;
+    }
+    // Hàm tính toán kết quả
+    function calculateResults() {
+      const matrixValues = getMatrixValues();
+      // Kiểm tra giá trị trong ma trận (Nếu trong đó xuất hiện giá trị âm thì hiển thị ra thông báo 'Negative probabilities are not allowed. Please re-enter the matrix.')
+      if (!validateMatrixValues()) {
+        alert('Negative probabilities are not allowed. Please re-enter the matrix.');
+        return;
+      }
+      // Nhận giá trị trong các ô đã nhập
+      const rows = parseInt(document.getElementById('rows').value);
+      const columns = parseInt(document.getElementById('columns').value);
+      const marginalX = new Array(rows).fill(0); 
+      const marginalY = new Array(columns).fill(0);
+
+      for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < columns; j++) {
+          const probability = matrixValues[i * columns + j];
+          marginalX[i] += probability;
+          marginalY[j] += probability;
+        }
+      }
+      // Gọi các hàm tính toán 
+      const entropyX = calculateEntropy(marginalX);
+      const entropyY = calculateEntropy(marginalY);
+      const jointEntropy = calculateJointEntropy(matrixValues, rows, columns);
+      const conditionalEntropyXGivenY = calculateConditionalEntropy(matrixValues, rows, columns, marginalY);
+      const conditionalEntropyYGivenX = calculateConditionalEntropy(matrixValues, rows, columns, marginalX);
+      const mutualInformation = entropyX + entropyY - jointEntropy;
+      const divergencePXtoPY = calculateKLDivergence(marginalX, marginalY);
+      const divergencePYtoPX = calculateKLDivergence(marginalY, marginalX);
+
+      const results = document.getElementById('results');
+      // In Kết quả ra màn hình
+      results.innerHTML = `
+        <p>H(X): ${entropyX}</p>
+        <p>H(Y): ${entropyY}</p>
+        <p>H(X | Y): ${conditionalEntropyXGivenY}</p>
+        <p>H(Y | X): ${conditionalEntropyYGivenX}</p>
+        <p>H(X, Y): ${jointEntropy}</p>
+        <p>H(Y) - H(Y | X): ${entropyY - conditionalEntropyYGivenX}</p>
+        <p>I(X; Y): ${mutualInformation}</p>
+        <p>D(P(x) || P(y)): ${divergencePXtoPY}</p>
+        <p>D(P(y) || P(x)): ${divergencePYtoPX}</p>
+      `;
+    }
+  </script>
+</body>
+</html>
